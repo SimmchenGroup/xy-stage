@@ -15,12 +15,10 @@ class MotorControl:
         sign = "+" if speed >= 0 else "-"
         self.serial_comm.send_command(f"Y{sign}{abs(speed)}")
 
-    def move_x(self, steps: int):
-        sign = "+" if steps >= 0 else "-"
+    def move_x(self, steps: int, sign):
         self.serial_comm.send_command(f"Xm{sign}{abs(steps)}")
 
-    def move_y(self, steps: int):
-        sign = "+" if steps >= 0 else "-"
+    def move_y(self, steps: int, sign):
         self.serial_comm.send_command(f"Ym{sign}{abs(steps)}")
 
     def parse_and_send_motor_command(self, cmd: str):
@@ -43,9 +41,9 @@ class MotorControl:
                 return
 
             if axis == "Xm":
-                self.move_x(value if cmd[2] == "+" else -value)
+                self.move_x(value, cmd[2])
             else:  # "Ym"
-                self.move_y(value if cmd[2] == "+" else -value)
+                self.move_y(value, cmd[2])
         elif cmd.startswith("X") or cmd.startswith("Y"):
             # Speed command detected
             axis = cmd[0]  # "X" or "Y"
