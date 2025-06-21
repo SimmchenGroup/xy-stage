@@ -4,7 +4,7 @@ from serial_comm import SerialComm
 from motor_control import MotorControl
 
 class MotorUI:
-    def __init__(self, master, motor_ctrl):
+    def __init__(self, master, motor_ctrl: MotorControl):
         self.master = master
         self.motor_ctrl = motor_ctrl
 

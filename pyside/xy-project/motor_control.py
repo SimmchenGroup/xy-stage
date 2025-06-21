@@ -42,7 +42,7 @@ class MotorControl:
 
             if axis == "Xm":
                 self.move_x(value, cmd[2])
-            else:  # "Ym"
+            elif axis == 'Ym':
                 self.move_y(value, cmd[2])
         elif cmd.startswith("X") or cmd.startswith("Y"):
             # Speed command detected

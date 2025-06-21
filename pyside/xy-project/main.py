@@ -2,6 +2,8 @@ import tkinter as tk
 from serial_comm import SerialComm
 from motor_control import MotorControl
 from tk_ui import MotorUI
+from motor_UI import MainWindow
+from PyQt5.QtWidgets import QApplication
 # from camera import Camera  # Uncomment if needed
 
 def main():
@@ -10,15 +12,20 @@ def main():
     serial_comm.open()
     motor_ctrl = MotorControl(serial_comm)
 
-
-
-    root = tk.Tk()
-    ui = MotorUI(root, motor_ctrl)
-    root.mainloop()
-
-    # When the UI window is closed, close the serial connection
+    app = QApplication([])
+    window = MainWindow(motor_ctrl)
+    window.show()
+    app.exec_()
     serial_comm.close()
 
+
+    # root = tk.Tk()
+    # ui = MotorUI(root, motor_ctrl)
+    # root.mainloop()
+    #
+    # # When the UI window is closed, close the serial connection
+    # serial_comm.close()
+    #
 
     # try:
     #     while True:

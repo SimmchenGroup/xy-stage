@@ -121,7 +121,7 @@ void handleCommand(String cmd) {
       stepperX.move(steps);
       blink(x_pink, steps);
       //Serial.println("Moving in X");
-    } else {
+    } else if (axis == 'Y') {
       stepperY.move(steps);
       blink(y_yell, steps);
       //Serial.println("Moving in Y");

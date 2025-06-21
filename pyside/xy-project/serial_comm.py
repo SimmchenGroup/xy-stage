@@ -29,7 +29,7 @@ class SerialComm:
             # Read response lines (if any)
             response = self.ser.readline().decode().strip()
             if response:
-                print(f"Arduino response: {response}")
+                print(f"Arduino says: {response}")
 
     def read_line(self):
         if self.ser and self.ser.is_open and self.ser.in_waiting:
