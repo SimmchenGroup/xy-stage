@@ -1,24 +1,33 @@
 from serial_comm import SerialComm
 
+
 class MotorControl:
     def __init__(self, serial_comm: SerialComm):
         self.serial_comm = serial_comm
+        self._busy = False
+        self.serial_comm.on_receive(self._handle_response)
+
+    def _handle_response(self, line: str):
+        if line.strip() == "DONE":
+            print("Motion complete. Lock Released")
+            self._busy = False
 
     def stop(self):
         self.serial_comm.send_command("S")
 
-    def set_speed_x(self, speed: int):
-        sign = "+" if speed >= 0 else "-"
+    def set_speed_x(self, speed: int, sign):
+        #print(f"Transmitting Command: X{sign}{abs(speed)}")
         self.serial_comm.send_command(f"X{sign}{abs(speed)}")
 
-    def set_speed_y(self, speed: int):
-        sign = "+" if speed >= 0 else "-"
+    def set_speed_y(self, speed: int, sign):
         self.serial_comm.send_command(f"Y{sign}{abs(speed)}")
 
-    def move_x(self, steps: int, sign):
+    def displace_x(self, steps: int, sign):
+        self._busy = True
         self.serial_comm.send_command(f"Xm{sign}{abs(steps)}")
 
-    def move_y(self, steps: int, sign):
+    def displace_y(self, steps: int, sign):
+        self._busy = True
         self.serial_comm.send_command(f"Ym{sign}{abs(steps)}")
 
     def parse_and_send_motor_command(self, cmd: str):
@@ -28,7 +37,10 @@ class MotorControl:
         And movement commands: "Xm+100", "Ym-50"
         """
         cmd = cmd.strip()
-        if cmd.startswith("Xm") or cmd.startswith("Ym"):
+        if cmd == "S":
+            self.stop()
+
+        elif cmd.startswith("Xm") or cmd.startswith("Ym"):
             # Movement command detected
             axis = cmd[:2]  # "Xm" or "Ym"
             if len(cmd) < 3 or cmd[2] not in "+-":
@@ -57,6 +69,6 @@ class MotorControl:
                 return
 
             if axis == "X":
-                self.set_speed_x(value if cmd[1] == "+" else -value)
-            else:  # "Y"
-                self.set_speed_y(value if cmd[1] == "+" else -value)
+                self.set_speed_x(value, cmd[1])
+            elif axis == "Y":
+                self.set_speed_y(value, cmd[1])

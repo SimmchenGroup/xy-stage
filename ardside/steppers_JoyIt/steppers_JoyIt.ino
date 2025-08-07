@@ -1,25 +1,27 @@
 #include <AccelStepper.h>
 
+// Stepper Pins
 AccelStepper stepperX(AccelStepper::DRIVER, 2, 5);  // STEP, DIR
 AccelStepper stepperY(AccelStepper::DRIVER, 3, 6);  // STEP, DIR
 
-// These will be the enable pins in future but for now are LEDs
-const int x_step = 11;
-const int y_step = 10;
-
-const int x_move = 9;
-const int y_move = 8;
+const int x_EN = 9;
+const int y_EN = 8;
 
 // Analog Pins of the Arduino: 'measuring' a voltage given by the potentiostats on the joystick
-const int joyXPin = A0;
-const int joyYPin = A1;
-
-const int deadzone = 50;  // Analog deadzone: e.g. if the voltage is 5% either side of neutral 
-const int maxSpeed = 800;
+const int joyUp = 14;
+const int joyDown = 15;
+const int joyLeft = 16;
+const int joyRight = 17;
 
 String inputString = "";
 bool stringComplete = false;
 
+const int maxSpeed = 800;
+
+// overall moveSpeed for the joystick
+int moveSpeed = 300;
+
+// variable movement speeds 
 int serialXSpeed = 0;
 int serialYSpeed = 0;
 
@@ -28,18 +30,19 @@ void setup() {
   Serial.begin(115200);
   inputString.reserve(20);
 
-  pinMode(x_step, OUTPUT);
-  pinMode(y_step, OUTPUT);
+  // initialise joystick pins (these are simple switches)
+  pinMode(joyUp, INPUT_PULLUP);
+  pinMode(joyDown, INPUT_PULLUP);
+  pinMode(joyLeft, INPUT_PULLUP);
+  pinMode(joyRight, INPUT_PULLUP);
 
-  pinMode(x_move, OUTPUT);
-  pinMode(y_move, OUTPUT);
+  
+  pinMode(x_EN, OUTPUT);
+  digitalWrite(x_EN, LOW);
 
-  blinking(6, x_step, 50);
-  blinking(6, y_step, 50);
-
-  blinking(1, x_move, 300);
-  blinking(1, y_move, 300);
-
+  pinMode(y_EN, OUTPUT);
+  digitalWrite(y_EN, LOW);
+  
   stepperX.setMaxSpeed(maxSpeed);
   stepperY.setMaxSpeed(maxSpeed);
 
@@ -69,33 +72,43 @@ void loop() {
     stringComplete = false;
   }
   
-  // Analog Joystick read
-  int joyX = analogRead(joyXPin);
-  int joyY = analogRead(joyYPin);
-  int xOffset = joyX - 512;
-  int yOffset = joyY - 512;
-  
-  bool joystickActive = abs(xOffset) > deadzone || abs(yOffset) > deadzone;
+  bool joystickActive = (digitalRead(joyUp) == LOW || digitalRead(joyDown) == LOW || digitalRead(joyLeft) == LOW || digitalRead(joyRight) == LOW );
   
   if (joystickActive) {
-    // Override: joystick in control
-    int xSpeed = map(xOffset, -512, 512, -maxSpeed, maxSpeed);
-    int ySpeed = map(yOffset, -512, 512, -maxSpeed, maxSpeed);
-    stepperX.setSpeed(xSpeed);
-    stepperY.setSpeed(ySpeed);
+    serialXSpeed = 0;
+    serialYSpeed = 0;
+    if (digitalRead(joyUp) == LOW){
+      stepperY.setSpeed(moveSpeed);
+      stepperY.runSpeed();
+    }
+    else if (digitalRead(joyDown) == LOW){
+      stepperY.setSpeed((-moveSpeed));
+      stepperY.runSpeed();
+    }
+    if (digitalRead(joyRight) == LOW){
+      stepperX.setSpeed(moveSpeed);
+      stepperX.runSpeed();
+    }
+    else if (digitalRead(joyLeft) == LOW){
+      stepperX.setSpeed(-moveSpeed);
+      stepperX.runSpeed();
+    }
   } else {
     // Joystick centered: allow serial control (speeds updated on handleCommand)
     stepperX.setSpeed(serialXSpeed);
     stepperY.setSpeed(serialYSpeed);
+    stepperX.runSpeed();
+    stepperY.runSpeed();
   }
-  
   // Always run the motors
-  stepperX.runSpeed();
-  stepperY.runSpeed();
+
 }
 
 void handleCommand(String cmd) {
   //Serial.println("handleCommand invoked");
+  stepperX.run();
+  stepperY.run();
+
   cmd.trim();  // Remove excess whitespace
   
   if (cmd.length() == 0) return;  // Ignore empty commands
@@ -106,21 +119,25 @@ void handleCommand(String cmd) {
     serialYSpeed = 0;
     stepperX.stop();  // Optionally stop or set speed to zero
     stepperY.stop();
-    led_bright(x_move, 0);
-    led_bright(y_move, 0);
-    LED_OFF(x_step);
-    LED_OFF(y_step);
     Serial.println("Stopping on Arduino end due to 'S'");
     Serial.println("DONE");
     return;
   }
   
   char axis = cmd.charAt(0);
-  if (axis != 'X' && axis != 'Y') {
+  if (axis != 'X' && axis != 'Y' && axis != 'V') {
     Serial.println("Invalid Axis");
     // Invalid axis command – ignore
     return;
   }
+
+  if (axis == 'V') {
+    int newSpeed = cmd.substring(1).toInt();  // Handles +/-
+    moveSpeed = constrain(abs(newSpeed), 0, maxSpeed);  // Cap to safe range
+    Serial.println("Updated Movement Speed to " + String(moveSpeed));
+    return;
+}
+
   
   String param = cmd.substring(1);
   if (param.length() == 0) return;  // No parameter provided
@@ -133,18 +150,18 @@ void handleCommand(String cmd) {
     Serial.println("Axis: " + String(axis) + " | Steps: " + String(steps));
     // Move relative steps
     if (axis == 'X') {
-      stepperX.move(steps);
-      blink(x_step, steps);
+        if (stepperX.distanceToGo() == 0) {
+          stepperX.move(steps);
+          }
       Serial.println("DONE");
     } else if (axis == 'Y') {
-      stepperY.move(steps);
-      blink(y_step, steps);
-      Serial.println("DONE");
+      if (stepperY.distanceToGo() == 0) {
+        stepperY.move(steps);
+        }
     }
   }
   else {
     // Continuous speed command (e.g., X+300, Y-150)
-    Serial.print("Continuous | ");
     char dir = param.charAt(0);
     String speedStr = param.substring(1);
     int speed = speedStr.toInt();
@@ -159,38 +176,12 @@ void handleCommand(String cmd) {
     
     if (axis == 'X') {
       serialXSpeed = speed;
-      led_bright(x_move, serialXSpeed);
       stepperX.setSpeed(speed);
     }
     if (axis == 'Y') {
       serialYSpeed = speed;
-      led_bright(y_move, serialYSpeed);
       stepperY.setSpeed(speed);
     }
   }
 }
 
-// Some LED functions for testing
-void LED_ON(int pin) {
-  digitalWrite(pin, HIGH);
-}
-void LED_OFF(int pin) {
-  digitalWrite(pin, LOW);
-}
-
-void led_bright(int pin, int speed){
-  int brightness = map(abs(speed), 0, maxSpeed, 0, 255);
-  analogWrite(pin, brightness);
-}
-
-void blink(int pin, int delaytime) {
-  LED_ON(pin);
-  delay(abs(delaytime));
-  LED_OFF(pin);
-  delay(abs(delaytime));
-}
-void blinking(int cycles, int pin, int speed) {
-  for (int i = 0; i < cycles; i++) {  // Using < cycles ensures the LED blinks "cycles" times
-    blink(pin, speed);
-  }
-}
