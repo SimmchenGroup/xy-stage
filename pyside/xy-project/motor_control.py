@@ -15,11 +15,14 @@ class MotorControl:
     def stop(self):
         self.serial_comm.send_command("S")
 
-    def set_speed_x(self, speed: int, sign):
+    def set_speed(self, speed: int):
+        self.serial_comm.send_command(f"V+{abs(speed)}")
+
+    def move_x(self, speed: int, sign):
         #print(f"Transmitting Command: X{sign}{abs(speed)}")
         self.serial_comm.send_command(f"X{sign}{abs(speed)}")
 
-    def set_speed_y(self, speed: int, sign):
+    def move_y(self, speed: int, sign):
         self.serial_comm.send_command(f"Y{sign}{abs(speed)}")
 
     def displace_x(self, steps: int, sign):

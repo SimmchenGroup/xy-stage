@@ -16,10 +16,12 @@ const int joyRight = 17;
 String inputString = "";
 bool stringComplete = false;
 
-const int maxSpeed = 800;
+const int maxSpeed = 1200;
 
 // overall moveSpeed for the joystick
 int moveSpeed = 300;
+
+float currentSpeed = 300;
 
 // variable movement speeds 
 int serialXSpeed = 0;
@@ -136,7 +138,7 @@ void handleCommand(String cmd) {
     moveSpeed = constrain(abs(newSpeed), 0, maxSpeed);  // Cap to safe range
     Serial.println("Updated Movement Speed to " + String(moveSpeed));
     return;
-}
+  }
 
   
   String param = cmd.substring(1);
@@ -150,14 +152,18 @@ void handleCommand(String cmd) {
     Serial.println("Axis: " + String(axis) + " | Steps: " + String(steps));
     // Move relative steps
     if (axis == 'X') {
-        if (stepperX.distanceToGo() == 0) {
-          stepperX.move(steps);
-          }
+      stepperX.setMaxSpeed(moveSpeed * 10);
+      stepperX.setAcceleration(moveSpeed * 1000);
+      stepperX.moveTo(stepperX.currentPosition() + steps);
+      stepperX.runToPosition();
       Serial.println("DONE");
-    } else if (axis == 'Y') {
-      if (stepperY.distanceToGo() == 0) {
-        stepperY.move(steps);
-        }
+    }
+    else if (axis == 'Y') {
+      stepperY.setMaxSpeed(moveSpeed * 10);       // units: steps per second
+      stepperY.setAcceleration(moveSpeed * 1000);
+      stepperY.moveTo(stepperY.currentPosition() + steps);
+      stepperY.runToPosition();
+      Serial.println("DONE");
     }
   }
   else {

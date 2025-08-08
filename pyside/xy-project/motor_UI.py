@@ -24,12 +24,12 @@ class MainWindow(QMainWindow):
         self.held_keys = set()  # keep track of which keys are currently held down.
 
         self.speed_interval = 50
-        self.speed_min = 0
-        self.speed_max = 1000
+        self.speed_min = 200
+        self.speed_max = 2500
 
         self.step_interval = 50
         self.step_min = 0
-        self.step_max = 1000
+        self.step_max = 5000
 
         # Here is all the creation of the Window or 'parent' as I probably incorrectly call it
         self.setWindowTitle("XY-Stage Control")
@@ -92,13 +92,13 @@ class MainWindow(QMainWindow):
         elif key == Qt.Key_S:
             self.motor_ctrl.displace_y(step, "-")
         elif key == Qt.Key_J:
-            self.motor_ctrl.set_speed_x(speed, "-")
+            self.motor_ctrl.move_x(speed, "-")
         elif key == Qt.Key_L:
-            self.motor_ctrl.set_speed_x(speed, "+")
+            self.motor_ctrl.move_x(speed, "+")
         elif key == Qt.Key_I:
-            self.motor_ctrl.set_speed_y(speed, "+")
+            self.motor_ctrl.move_y(speed, "+")
         elif key == Qt.Key_K:
-            self.motor_ctrl.set_speed_y(speed, "-")
+            self.motor_ctrl.move_y(speed, "-")
 
     def keyReleaseEvent(self, event):
         if event.isAutoRepeat():
@@ -106,9 +106,9 @@ class MainWindow(QMainWindow):
         key = event.key()
         self.held_keys.discard(key)
         if key in {Qt.Key_J, Qt.Key_L}:
-            self.motor_ctrl.set_speed_x(0, "+")
+            self.motor_ctrl.move_x(0, "+")
         elif key in {Qt.Key_I, Qt.Key_K}:
-            self.motor_ctrl.set_speed_y(0, "+")
+            self.motor_ctrl.move_y(0, "+")
 
     def label_styler(self, label: QLabel):
         label.setStyleSheet("""
@@ -139,6 +139,7 @@ class MainWindow(QMainWindow):
     def update_speed_label(self, value):
         snapped = self.snap_to_interval(value, self.speed_interval)
         self.speed_label.setText(f"Speed : {snapped}")
+        self.motor_ctrl.set_speed(snapped)
 
     def update_step_label(self, value):
         snapped = self.snap_to_interval(value, self.step_interval)
