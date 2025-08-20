@@ -23,13 +23,13 @@ class MainWindow(QMainWindow):
 
         self.held_keys = set()  # keep track of which keys are currently held down.
 
-        self.speed_interval = 50
-        self.speed_min = 200
+        self.speed_interval = 100
+        self.speed_min = 300
         self.speed_max = 2500
 
-        self.step_interval = 50
-        self.step_min = 0
-        self.step_max = 5000
+        self.step_interval = 100
+        self.step_min = 100
+        self.step_max = 2500
 
         # Here is all the creation of the Window or 'parent' as I probably incorrectly call it
         self.setWindowTitle("XY-Stage Control")
@@ -84,17 +84,17 @@ class MainWindow(QMainWindow):
             return   #this will ignore repeats
         self.held_keys.add(key)
         if key == Qt.Key_A:
-            self.motor_ctrl.displace_x(step, "-")
-        elif key == Qt.Key_D:
             self.motor_ctrl.displace_x(step, "+")
+        elif key == Qt.Key_D:
+            self.motor_ctrl.displace_x(step, "-")
         elif key == Qt.Key_W:
             self.motor_ctrl.displace_y(step, "+")
         elif key == Qt.Key_S:
             self.motor_ctrl.displace_y(step, "-")
         elif key == Qt.Key_J:
-            self.motor_ctrl.move_x(speed, "-")
-        elif key == Qt.Key_L:
             self.motor_ctrl.move_x(speed, "+")
+        elif key == Qt.Key_L:
+            self.motor_ctrl.move_x(speed, "-")
         elif key == Qt.Key_I:
             self.motor_ctrl.move_y(speed, "+")
         elif key == Qt.Key_K:

@@ -16,7 +16,7 @@ const int joyRight = 17;
 String inputString = "";
 bool stringComplete = false;
 
-const int maxSpeed = 1200;
+const int maxSpeed = 2500;
 
 // overall moveSpeed for the joystick
 int moveSpeed = 300;
